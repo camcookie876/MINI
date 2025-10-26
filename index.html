@@ -66,15 +66,29 @@
       }
     }
     .error { text-color: #ff0000:}
+    .mini-btn {
+      border: solid #ff0000;
+      border-radius: 5px;
+      background: #0099ff;
+      color: #ff0000;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+    .mini-btn:hover {
+      background: #ff0000;
+      color: white;
+      border: solid #0099ff;
+    }
   </style>
 </head>
 <body>
   <h1>Welcome to Camcookie MINI</h1>
   <div class="button-container">
     <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/view/')">View Page</button>
-    <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/2/')">Generate Page</button>
+    <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/make/')">Generate Page</button>
   </div>
-  <h1 class="error">WARNING: There may be mistakes in the code. There is no licanse on this file. Feel free to edit!</h1>
+  <h1 class="error">WARNING: There may be mistakes in the code. Curent license: Unlicense. <button class="mini-btn" onclick="goTo('https://github.com/camcookie876/MINI/blob/main/LICENSE')">License imfromation</button>
+  </div></h1>
 
   <script>
     function goTo(url) {
