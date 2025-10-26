@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Challenge Maker - Camcookie MINI</title>
+  <style>
+    :root{
+      --bg:#f7f7f8; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+      --accent:#0ea5e9; --accent-2:#22c55e; --danger:#ef4444;
+      --warn-bg:#fff3cd; --warn-border:#ffc107;
+      --border:#e5e7eb; --shadow:0 10px 24px rgba(0,0,0,.06);
+    }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .wrap{ max-width:1100px; margin:28px auto 96px; padding:0 16px; }
+    header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    h1{ font-size:1.4rem; margin:0; }
+    .muted{ color:var(--muted); }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .chipset{ display:flex; gap:6px; flex-wrap:wrap; }
+    .chip{ padding:8px 10px; border-radius:999px; background:#eef2f7; color:#0f172a; border:1px solid #d7dde6; cursor:pointer; font-weight:600; font-size:.9rem; }
+    .chip:hover{ filter:brightness(.97); }
+    .expbadge{
+      position:relative; display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+      background:var(--warn-bg); border-left:4px solid var(--warn-border);
+      padding:.6em .9em; border-radius:10px; color:#333; box-shadow:0 8px 22px rgba(0,0,0,.10);
+    }
+    .popover{
+      position:absolute; top:120%; right:0; background:#fff; border:1px solid var(--border); border-radius:12px;
+      box-shadow:0 16px 36px rgba(0,0,0,.12); padding:12px; display:none; z-index:10; width:260px;
+    }
+    .expbadge.open .popover{ display:block; }
+    input[type="text"], input[type="url"], input[type="date"], input[type="number"], input[type="file"]{
+      width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#f9fafb; font-size:.98rem;
+    }
+    input.pin{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:16px; margin-top:8px; }
+    .card{
+      background:var(--card); border-radius:12px; padding:16px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .card .toprow{ display:flex; gap:8px; align-items:center; }
+    .drag{ width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:1px dashed #cbd5e1; border-radius:6px; cursor:grab; user-select:none; }
+    .btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn{
+      border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; letter-spacing:.2px;
+      background:var(--accent); color:#fff; transition:transform .1s ease, opacity .2s ease;
+    }
+    .btn:active{ transform:translateY(1px); }
+    .btn.secondary{ background:#e5e7eb; color:#111827; }
+    .btn.ghost{ background:transparent; color:#111827; border:1px solid var(--border); }
+    .btn.danger{ background:#fee2e2; color:#b91c1c; }
+    .out{
+      margin-top:18px; background:#fff; padding:16px; border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:var(--shadow);
+    }
+    .linkbox{ word-break:break-all; background:#f3f4f6; padding:10px; border-radius:8px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .help{ font-size:.9rem; color:var(--muted); }
+    .toast{
+      position:fixed; top:12px; right:12px; background:var(--warn-bg); border-left:4px solid var(--warn-border);
+      padding:.7em 1em; border-radius:10px; color:#333; box-shadow:0 8px 22px rgba(0,0,0,.08);
+      opacity:0; transform:translateY(-8px); transition:all .22s ease; max-width:380px; z-index:50;
+    }
+    .toast.show{ opacity:1; transform:translateY(0); }
+    .meta{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .meter{ height:8px; background:#eef2f7; border-radius:999px; overflow:hidden; width:220px; border:1px solid #d7dde6; }
+    .meter > b{ display:block; height:100%; background:linear-gradient(90deg, #22c55e, #0ea5e9); width:0%; transition:width .25s ease; }
+    .panel{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
+    .stack{ display:flex; flex-direction:column; gap:8px; }
+    .qrwrap{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    canvas.qr, svg.qr{ border-radius:12px; background:#fff; }
+    .hidden{ display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Camcookie — Challenge Maker</h1>
+      <div id="expBadge" class="expbadge" title="Click to set expiration" aria-haspopup="dialog" aria-expanded="false" role="button" tabindex="0">
+        <span id="expText">Expires: —</span>
+        <div class="popover" role="dialog" aria-label="Expiration editor">
+          <label class="muted">Expiration date</label>
+          <input type="date" id="expInput" />
+          <div class="btnrow" style="margin-top:10px;">
+            <button class="btn secondary" id="expCancel">Cancel</button>
+            <button class="btn" id="expSave">Save</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div class="row">
+        <div style="flex:1; min-width:220px;">
+          <label>Source label (from=)</label>
+          <input id="from" type="text" placeholder="e.g. mathDay, homeroom, CamcookieQR" autocomplete="off" />
+          <div class="chipset" style="margin-top:6px;">
+            <span class="chip" data-from="classroom">Classroom</span>
+            <span class="chip" data-from="workshop">Workshop</span>
+            <span class="chip" data-from="CamcookieQR">CamcookieQR</span>
+            <span class="chip" data-from="custom">Custom…</span>
+          </div>
+        </div>
+        <div class="meta" style="margin-left:auto;">
+          <div class="help">URL size</div>
+          <div class="meter" aria-hidden="true"><b id="meterBar"></b></div>
+          <div id="lenLabel" class="help">0 chars</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn" id="add">Add challenge</button>
+        <button class="btn secondary" id="clear">Clear all</button>
+        <button class="btn ghost" id="export">Export JSON</button>
+        <label class="btn ghost" for="importFile" style="cursor:pointer;">Import JSON<input id="importFile" type="file" accept="application/json" class="hidden"></label>
+      </div>
+      <div class="help" style="margin-top:6px;">Tip: Drag the handle on each card to reorder.</div>
+    </div>
+
+    <div id="grid" class="grid" aria-live="polite"></div>
+
+    <div class="out">
+      <div class="row" style="align-items:flex-start;">
+        <div class="btnrow">
+          <button class="btn" id="generate">Generate link & QR</button>
+          <button class="btn secondary" id="copyLink">Copy link</button>
+          <button class="btn ghost" id="downloadPNG">Download PNG</button>
+          <button class="btn ghost" id="downloadSVG">Download SVG</button>
+        </div>
+        <div class="help" style="margin-left:auto; max-width:420px;">
+          Your link targets <strong>MINI/view/index.html</strong> with exp, from, and repeated k entries.
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <div class="stack">
+          <label>QR size (px)</label>
+          <input type="number" id="qrSize" min="120" max="1024" step="4" value="220" />
+        </div>
+        <div class="stack">
+          <label>Margin (modules)</label>
+          <input type="number" id="qrMargin" min="0" max="10" step="1" value="1" />
+        </div>
+        <div class="stack">
+          <label>Foreground color</label>
+          <input type="text" id="qrDark" value="#111827" />
+        </div>
+        <div class="stack">
+          <label>Background color</label>
+          <input type="text" id="qrLight" value="#ffffff" />
+        </div>
+        <div class="stack">
+          <label>Error correction</label>
+          <select id="qrEcc">
+            <option value="L">L (7%)</option>
+            <option value="M" selected>M (15%)</option>
+            <option value="Q">Q (25%)</option>
+            <option value="H">H (30%)</option>
+          </select>
+        </div>
+        <div class="stack">
+          <label>Roundness (0–1)</label>
+          <input type="number" id="qrRound" min="0" max="1" step="0.05" value="0.15" />
+        </div>
+        <div class="stack">
+          <label>Logo overlay (PNG/SVG)</label>
+          <input type="file" id="qrLogo" accept="image/*" />
+        </div>
+        <div class="stack">
+          <label>Logo size (% of QR)</label>
+          <input type="number" id="qrLogoSize" min="10" max="40" step="1" value="22" />
+        </div>
+        <div class="stack">
+          <label>Logo opacity</label>
+          <input type="number" id="qrLogoOpacity" min="0" max="1" step="0.05" value="1" />
+        </div>
+      </div>
+
+      <div class="linkbox" id="link" style="margin-top:12px;"></div>
+      <div class="qrwrap" style="margin-top:12px;">
+        <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
+        <div id="qrPreviewNote" class="help"></div>
+      </div>
+      <div id="linkNote" class="help" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">All set.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    (function(){
+      // Elements
+      const grid = document.getElementById('grid');
+      const fromInput = document.getElementById('from');
+      const chips = Array.from(document.querySelectorAll('.chip'));
+      const expBadge = document.getElementById('expBadge');
+      const expText = document.getElementById('expText');
+      const expInput = document.getElementById('expInput');
+      const expCancel = document.getElementById('expCancel');
+      const expSave = document.getElementById('expSave');
+      const addBtn = document.getElementById('add');
+      const clearBtn = document.getElementById('clear');
+      const exportBtn = document.getElementById('export');
+      const importFile = document.getElementById('importFile');
+      const genBtn = document.getElementById('generate');
+      const copyBtn = document.getElementById('copyLink');
+      const downloadPNGBtn = document.getElementById('downloadPNG');
+      const downloadSVGBtn = document.getElementById('downloadSVG');
+      const linkBox = document.getElementById('link');
+      const linkNote = document.getElementById('linkNote');
+      const toast = document.getElementById('toast');
+      const meterBar = document.getElementById('meterBar');
+      const lenLabel = document.getElementById('lenLabel');
+
+      const qrCanvas = document.getElementById('qrCanvas');
+      const qrCtx = qrCanvas.getContext('2d');
+      const qrPreviewNote = document.getElementById('qrPreviewNote');
+
+      // Constants
+      const BASE_VIEW = 'https://camcookie876.github.io/MINI/view/index.html';
+      const STORAGE_KEY = 'camcookie_challenge_maker_v2';
+      const URL_SOFT_LIMIT = 1800; // conservative
+      const QR_DEFAULTS = { size:220, margin:1, dark:'#111827', light:'#ffffff', ecc:'M', round:0.15, logoData:null, logoSize:22, logoOpacity:1 };
+
+      // State
+      let expiry = null; // Date or null
+      let dragging = null;
+      let qrOpts = { ...QR_DEFAULTS };
+
+      // Utils
+      const clamp = (n, a, b)=> Math.max(a, Math.min(b, n));
+      const toDateOnly = d => { const local = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return local.toISOString().slice(0,10); };
+      const fmtDate = d => d ? d.toLocaleString(undefined, { year:'numeric', month:'long', day:'numeric' }) : '—';
+      const showToast = (msg, ms=1800)=>{
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(()=>toast.classList.remove('show'), ms);
+      };
+      const normalizePin = v => v.replace(/[^0-9]/g, '').slice(0, 10);
+
+      // Save/load
+      function saveDraft(){
+        const data = {
+          expiry: expiry ? expiry.toISOString() : null,
+          from: fromInput.value.trim(),
+          items: collect(true),
+          qr: qrOpts
+        };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+      }
+      function loadDraft(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const data = JSON.parse(raw);
+          if (data.expiry) { expiry = new Date(data.expiry); updateExpBadge(); }
+          if (data.from) fromInput.value = data.from;
+          if (data.qr) { qrOpts = { ...QR_DEFAULTS, ...data.qr }; syncQRControls(); }
+          if (Array.isArray(data.items)) { grid.innerHTML = ''; data.items.forEach(it => addCard(it)); }
+          refreshLinkPreviewLength(); drawQR(linkBox.textContent.trim());
+        }catch{}
+      }
+
+      // Expiration editor
+      function updateExpBadge(){ expText.textContent = 'Expires: ' + fmtDate(expiry); }
+      function openExp(){
+        expBadge.classList.add('open'); expBadge.setAttribute('aria-expanded','true');
+        const base = expiry || (function(){ const d=new Date(); d.setDate(d.getDate()+7); d.setHours(23,59,59,999); return d; })();
+        expInput.value = toDateOnly(base);
+      }
+      function closeExp(){ expBadge.classList.remove('open'); expBadge.setAttribute('aria-expanded','false'); }
+      expBadge.addEventListener('click', (e)=>{ if (e.target.closest('.popover')) return; expBadge.classList.contains('open') ? closeExp() : openExp(); });
+      expBadge.addEventListener('keydown', (e)=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); openExp(); } if (e.key==='Escape') closeExp(); });
+      expCancel.addEventListener('click', (e)=>{ e.stopPropagation(); closeExp(); });
+      expSave.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const val = expInput.value;
+        if (val){
+          expiry = new Date(val + 'T23:59:59'); updateExpBadge(); closeExp(); saveDraft(); showToast('Expiration updated.'); refreshLinkPreviewLength();
+        }
+      });
+      document.addEventListener('click', (e)=>{ if (!expBadge.contains(e.target)) closeExp(); });
+
+      // Cards
+      function cardTemplate({title='', pin='', url=''} = {}){
+        const safe = s => (s||'').replace(/"/g,'&quot;');
+        return `
+          <div class="toprow">
+            <div class="drag" title="Drag to reorder" draggable="true" aria-grabbed="false">⋮⋮</div>
+            <input type="text" class="title" placeholder="Title (e.g. Group A)" value="${safe(title)}" aria-label="Title">
+          </div>
+          <div class="row">
+            <input type="text" class="pin pin" inputmode="numeric" pattern="[0-9]*" placeholder="PIN" value="${safe(pin)}" aria-label="PIN">
+            <input type="url" class="url" placeholder="https://kahoot.it/challenge/..." value="${safe(url)}" aria-label="Kahoot link">
+          </div>
+          <div class="btnrow">
+            <button class="btn secondary preview" type="button">Preview link</button>
+            <button class="btn ghost duplicate" type="button">Duplicate</button>
+            <button class="btn danger remove" type="button">Remove</button>
+          </div>
+          <div class="help status"></div>
+        `;
+      }
+      function addCard(prefill){
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = cardTemplate(prefill);
+        // Wire controls
+        const drag = card.querySelector('.drag');
+        const title = card.querySelector('.title');
+        const pin = card.querySelector('.pin');
+        const url = card.querySelector('.url');
+        const status = card.querySelector('.status');
+        const remove = card.querySelector('.remove');
+        const preview = card.querySelector('.preview');
+        const duplicate = card.querySelector('.duplicate');
+
+        pin.addEventListener('input', ()=>{ const cur = pin.value; const norm = normalizePin(cur); if (cur!==norm) pin.value = norm; validateCard(); saveDraft(); refreshLinkPreviewLength(); });
+        title.addEventListener('input', ()=>{ validateCard(); saveDraft(); refreshLinkPreviewLength(); });
+        url.addEventListener('input', ()=>{ validateCard(); saveDraft(); refreshLinkPreviewLength(); });
+
+        remove.addEventListener('click', ()=>{ card.remove(); saveDraft(); refreshLinkPreviewLength(); showToast('Removed.'); });
+        duplicate.addEventListener('click', ()=>{ addCard({ title: title.value.trim(), pin: pin.value.trim(), url: url.value.trim() }); showToast('Duplicated.'); saveDraft(); refreshLinkPreviewLength(); });
+        preview.addEventListener('click', ()=>{ const u = url.value.trim(); if (!u){ status.textContent='Add a challenge link first.'; return showToast('Add a challenge link first.'); } window.open(u, '_blank', 'noopener'); });
+
+        // Drag & drop
+        drag.addEventListener('dragstart', (e)=>{ drag.setAttribute('aria-grabbed','true'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',''); card.style.opacity=.6; window._draggingCard = card; });
+        drag.addEventListener('dragend', ()=>{ drag.setAttribute('aria-grabbed','false'); card.style.opacity=''; saveDraft(); window._draggingCard=null; });
+        card.addEventListener('dragover', (e)=>{ e.preventDefault(); const dragging = window._draggingCard; if (!dragging || dragging===card) return; const rect = card.getBoundingClientRect(); const before = e.clientY < rect.top + rect.height/2; grid.insertBefore(dragging, before ? card : card.nextSibling); });
+
+        grid.appendChild(card);
+        validateCard();
+
+        function validateCard(){
+          const t = title.value.trim();
+          const p = pin.value.trim();
+          const u = url.value.trim();
+          let msg = [];
+          if (!t) msg.push('title');
+          if (!p) msg.push('PIN');
+          if (!u) msg.push('link');
+          const looksK = /^https?:\/\/(www\.)?kahoot\.it\/challenge\//i.test(u);
+          status.textContent = msg.length ? ('Missing: ' + msg.join(', ')) : (looksK ? 'Looks good.' : (u ? 'Warning: link may not be a Kahoot challenge.' : ''));
+        }
+        return card;
+      }
+
+      function collect(includeEmpty=false){
+        const items = [];
+        grid.querySelectorAll('.card').forEach(card=>{
+          const title = card.querySelector('.title').value.trim();
+          const pin = card.querySelector('.pin').value.trim();
+          const url = card.querySelector('.url').value.trim();
+          if (includeEmpty || title || pin || url) items.push({ title, pin, url });
+        });
+        return items;
+      }
+
+      // Link size meter
+      function sizeNote(href){
+        const len = href.length;
+        const pct = Math.max(0, Math.min(100, Math.round((len/URL_SOFT_LIMIT)*100)));
+        meterBar.style.width = pct + '%';
+        lenLabel.textContent = len + ' chars';
+        if (len > URL_SOFT_LIMIT){
+          return `Heads up: this link exceeds a common safe length (${URL_SOFT_LIMIT}). Consider fewer items or separate links.`;
+        }
+        return 'Link size is within a safe range.';
+      }
+
+      function refreshLinkPreviewLength(){
+        const items = collect(false);
+        const from = fromInput.value.trim() || 'camcookie';
+        const u = new URL(BASE_VIEW);
+        if (expiry) u.searchParams.set('exp', toDateOnly(expiry));
+        u.searchParams.set('from', from);
+        items.forEach(it=>{
+          if (it.title && it.pin && it.url){
+            const packed = [it.title, it.pin, it.url].map(encodeURIComponent).join('|');
+            u.searchParams.append('k', packed);
+          }
+        });
+        sizeNote(u.toString());
+      }
+
+      // Link builder
+      function buildLink(){
+        const items = collect(false);
+        const from = fromInput.value.trim() || 'camcookie';
+        if (!expiry) return { href:'', note:'Set an expiration date in the corner.' };
+        if (items.length === 0) return { href:'', note:'Add at least one challenge card.' };
+        for (let i=0;i<items.length;i++){ const it = items[i]; if (!it.title || !it.pin || !it.url){ return { href:'', note:`Card ${i+1} is missing required fields.` }; } }
+        const u = new URL(BASE_VIEW);
+        u.searchParams.set('exp', toDateOnly(expiry));
+        u.searchParams.set('from', from);
+        items.forEach(it=>{
+          const packed = [it.title, it.pin, it.url].map(encodeURIComponent).join('|');
+          u.searchParams.append('k', packed);
+        });
+        const href = u.toString();
+        return { href, note: sizeNote(href) };
+      }
+
+      // QR drawing with customization
+      function drawQR(text){
+        const size = Number(qrSize.value) || qrOpts.size;
+        const margin = Number(qrMargin.value) || qrOpts.margin;
+        const eccMap = { L: 'low', M: 'medium', Q: 'quartile', H: 'high' };
+        const ecc = eccMap[qrEcc.value] || 'medium';
+
+        qrCanvas.width = qrCanvas.height = size;
+        qrCtx.clearRect(0,0,size,size);
+
+        // Base QR using qrcode canvas
+        return new Promise((resolve)=>{
+          const tmp = document.createElement('canvas');
+          window.QRCode.toCanvas(tmp, text || ' ', {
+            width: size,
+            margin: margin,
+            color: { dark: qrDark.value, light: qrLight.value },
+            errorCorrectionLevel: ecc
+          }, (err)=>{
+            if (err) { qrPreviewNote.textContent = 'QR render error.'; return resolve(); }
+            // Optional rounding: draw onto canvas with roundRect clip
+            qrCtx.save();
+            if (Number(qrRound.value) > 0){
+              const r = Math.max(0, Math.min(1, Number(qrRound.value)));
+              const rr = size * r * 0.08; // scale rounding softly
+              qrCtx.beginPath();
+              // Custom rounded rectangle
+              const w=size, h=size;
+              qrCtx.moveTo(rr,0); qrCtx.arcTo(w,0,w,h,rr); qrCtx.arcTo(w,h,0,h,rr); qrCtx.arcTo(0,h,0,0,rr); qrCtx.arcTo(0,0,w,0,rr);
+              qrCtx.closePath(); qrCtx.clip();
+            }
+            qrCtx.drawImage(tmp,0,0);
+            qrCtx.restore();
+
+            // Logo overlay
+            const logoSrc = qrOpts.logoData;
+            const pct = clamp(Number(qrLogoSize.value)||qrOpts.logoSize, 10, 40)/100;
+            const opacity = clamp(Number(qrLogoOpacity.value)||qrOpts.logoOpacity, 0, 1);
+            if (logoSrc){
+              const img = new Image();
+              img.onload = ()=>{
+                const w = size * pct;
+                const h = w * (img.height/img.width);
+                const x = (size - w)/2;
+                const y = (size - h)/2;
+                qrCtx.save();
+                qrCtx.globalAlpha = opacity;
+                qrCtx.drawImage(img, x, y, w, h);
+                qrCtx.restore();
+                resolve();
+              };
+              img.src = logoSrc;
+            } else {
+              resolve();
+            }
+          });
+        });
+      }
+
+      // Sync controls <-> state
+      const qrSize = document.getElementById('qrSize');
+      const qrMargin = document.getElementById('qrMargin');
+      const qrDark = document.getElementById('qrDark');
+      const qrLight = document.getElementById('qrLight');
+      const qrEcc = document.getElementById('qrEcc');
+      const qrRound = document.getElementById('qrRound');
+      const qrLogo = document.getElementById('qrLogo');
+      const qrLogoSize = document.getElementById('qrLogoSize');
+      const qrLogoOpacity = document.getElementById('qrLogoOpacity');
+
+      function syncQRControls(){
+        qrSize.value = qrOpts.size;
+        qrMargin.value = qrOpts.margin;
+        qrDark.value = qrOpts.dark;
+        qrLight.value = qrOpts.light;
+        qrEcc.value = qrOpts.ecc;
+        qrRound.value = qrOpts.round;
+        qrLogoSize.value = qrOpts.logoSize;
+        qrLogoOpacity.value = qrOpts.logoOpacity;
+      }
+
+      function readQRControlsIntoState(){
+        qrOpts.size = Number(qrSize.value)||QR_DEFAULTS.size;
+        qrOpts.margin = Number(qrMargin.value)||QR_DEFAULTS.margin;
+        qrOpts.dark = qrDark.value || QR_DEFAULTS.dark;
+        qrOpts.light = qrLight.value || QR_DEFAULTS.light;
+        qrOpts.ecc = qrEcc.value || QR_DEFAULTS.ecc;
+        qrOpts.round = Number(qrRound.value)||QR_DEFAULTS.round;
+        qrOpts.logoSize = Number(qrLogoSize.value)||QR_DEFAULTS.logoSize;
+        qrOpts.logoOpacity = Number(qrLogoOpacity.value)||QR_DEFAULTS.logoOpacity;
+      }
+
+      // Logo file loader
+      qrLogo.addEventListener('change', ()=>{
+        const f = qrLogo.files[0];
+        if (!f) { qrOpts.logoData = null; saveDraft(); drawQR(linkBox.textContent.trim()); return; }
+        const reader = new FileReader();
+        reader.onload = ()=>{ qrOpts.logoData = reader.result; saveDraft(); drawQR(linkBox.textContent.trim()); };
+        reader.readAsDataURL(f);
+      });
+
+      // Re-render QR on any control change
+      [qrSize, qrMargin, qrDark, qrLight, qrEcc, qrRound, qrLogoSize, qrLogoOpacity].forEach(el=>{
+        el.addEventListener('input', async ()=>{
+          readQRControlsIntoState(); saveDraft(); await drawQR(linkBox.textContent.trim());
+        });
+      });
+
+      // Build and render outputs
+      function renderOutput(){
+        const { href, note } = buildLink();
+        linkBox.textContent = href || '';
+        linkNote.textContent = note || '';
+        drawQR(href);
+      }
+
+      // Downloads
+      downloadPNGBtn.addEventListener('click', ()=>{
+        const a = document.createElement('a');
+        a.href = qrCanvas.toDataURL('image/png');
+        a.download = 'camcookie-qr.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+      downloadSVGBtn.addEventListener('click', ()=>{
+        // Simple SVG wrapper using current canvas as image for portability
+        const png = qrCanvas.toDataURL('image/png');
+        const size = qrCanvas.width;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><image href="${png}" width="${size}" height="${size}"/></svg>`;
+        const blob = new Blob([svg], {type:'image/svg+xml'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'camcookie-qr.svg';
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+
+      // Builder actions
+      document.getElementById('add').addEventListener('click', ()=>{ addCard({}); saveDraft(); showToast('Card added.'); refreshLinkPreviewLength(); });
+      document.getElementById('clear').addEventListener('click', ()=>{ grid.innerHTML=''; saveDraft(); refreshLinkPreviewLength(); showToast('Cleared.'); });
+      document.getElementById('export').addEventListener('click', ()=>{
+        const payload = { from: fromInput.value.trim(), exp: expiry ? toDateOnly(expiry) : null, items: collect(true), qr: qrOpts };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `camcookie-challenges-${Date.now()}.json`;
+        document.body.appendChild(a); a.click(); a.remove(); showToast('Exported JSON.');
+      });
+      importFile.addEventListener('change', ()=>{
+        const f = importFile.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ()=>{
+          try{
+            const data = JSON.parse(r.result);
+            if (data.from) fromInput.value = data.from;
+            if (data.exp) { expiry = new Date(data.exp + 'T23:59:59'); updateExpBadge(); }
+            if (data.qr) { qrOpts = { ...QR_DEFAULTS, ...data.qr }; syncQRControls(); }
+            grid.innerHTML=''; (data.items||[]).forEach(it=> addCard(it));
+            saveDraft(); refreshLinkPreviewLength(); renderOutput(); showToast('Imported JSON.');
+          }catch{ showToast('Invalid JSON file.'); }
+        };
+        r.readAsText(f); importFile.value='';
+      });
+      document.getElementById('generate').addEventListener('click', ()=>{ renderOutput(); const href = linkBox.textContent.trim(); if (href) showToast('Link & QR ready.'); });
+      document.getElementById('copyLink').addEventListener('click', async ()=>{ const href = linkBox.textContent.trim(); if (!href) return showToast('Generate a link first.'); try{ await navigator.clipboard.writeText(href); showToast('Link copied.'); }catch{} });
+
+      // Chips for from=
+      chips.forEach(ch => ch.addEventListener('click', ()=>{ const v=ch.getAttribute('data-from'); if (v==='custom'){ fromInput.focus(); fromInput.select(); } else { fromInput.value=v; saveDraft(); refreshLinkPreviewLength(); showToast(`Source: ${v}`); }}));
+      fromInput.addEventListener('input', ()=>{ saveDraft(); refreshLinkPreviewLength(); });
+
+      // Init
+      updateExpBadge(); loadDraft(); syncQRControls(); drawQR(' ');
+    })();
+  </script>
+</body>
+</html>
