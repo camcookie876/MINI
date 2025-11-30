@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Camcookie Translator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(to bottom right, #fffbe6, #ffe5f1);
+      color: #333;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #e55555;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .translator {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    input[type="file"], button {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    button {
+      background-color: #e55555;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #c23f3f;
+    }
+    #output {
+      width: 100%;
+      white-space: pre-wrap;
+      background: #f5f5f5;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      max-height: 250px;
+      overflow-y: auto;
+      font-family: monospace;
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 1rem;
+      text-decoration: none;
+      background: #5ca9e2;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    canvas {
+      margin-top: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Camcookie Translator</h1>
+  <div class="translator">
+    <label for="fileInput">Upload any image, sound, or video</label>
+    <input type="file" id="fileInput" />
+    <button id="transBtn">Translate</button>
+    <a id="downloadLink"></a>
+    <pre id="output"></pre>
+  </div>
+
+  <script>
+  ;(function() {
+    const input = document.getElementById('fileInput');
+    const button = document.getElementById('transBtn');
+    const output = document.getElementById('output');
+    const link = document.getElementById('downloadLink');
+
+    function parsePixels(text) {
+      const rx = /{(\d+),\s*(\d+)\((\d+),(\d+),(\d+)\)}/g;
+      let m, pixels = [];
+      while ((m = rx.exec(text))) {
+        pixels.push({x:+m[1], y:+m[2], r:+m[3], g:+m[4], b:+m[5]});
+      }
+      return pixels;
+    }
+
+    function drawPixels(pixels) {
+      const maxX = Math.max(...pixels.map(p => p.x));
+      const maxY = Math.max(...pixels.map(p => p.y));
+      const canvas = document.createElement('canvas');
+      canvas.width  = maxX + 1;
+      canvas.height = maxY + 1;
+      const ctx = canvas.getContext('2d');
+      pixels.forEach(p => {
+        ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
+        ctx.fillRect(p.x, p.y, 1, 1);
+      });
+      document.body.appendChild(canvas);
+      return canvas;
+    }
+
+    async function translate(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const text = await file.text();
+      let result;
+
+      if (['cami'].includes(ext)) {
+        const pixels = parsePixels(text);
+        const canvas = drawPixels(pixels);
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        return { blob, ext: 'png' };
+      }
+
+      if (ext === 'json') {
+        const json = JSON.parse(text);
+        if (json.type === 'cami' && json.data) {
+          const pixels = parsePixels(json.data);
+          const canvas = drawPixels(pixels);
+          const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+          return { blob, ext: 'png' };
+        }
+        if (json.type === 'cams') {
+          const sr = json.sampleRate;
+          const ch = json.channels;
+          const pcm = json.data;
+          const len = Math.max(...pcm.map(s=>s.t)) + 1;
+          const buffer = new ArrayBuffer(44 + len*2*ch);
+          const view = new DataView(buffer);
+          function writeStr(off,str){ for(let i=0;i<str.length;i++) view.setUint8(off+i,str.charCodeAt(i)); }
+          writeStr(0,"RIFF"); view.setUint32(4, 36+len*2*ch, true);
+          writeStr(8,"WAVE"); writeStr(12,"fmt "); view.setUint32(16,16,true);
+          view.setUint16(20,1,true); view.setUint16(22,ch,true);
+          view.setUint32(24,sr,true); view.setUint32(28,sr*2*ch,true);
+          view.setUint16(32,2*ch,true); view.setUint16(34,16,true);
+          writeStr(36,"data"); view.setUint32(40,len*2*ch,true);
+          pcm.forEach(s => {
+            for (let i=0; i<ch; i++) {
+              view.setInt16(44 + (s.t*ch+i)*2, s.v * 32767, true);
+            }
+          });
+          return { blob: new Blob([view], {type:'audio/wav'}), ext:'wav' };
+        }
+      }
+
+      if (['png','jpg','jpeg'].includes(ext)) {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        await img.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let cami = '';
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            const i = (y * canvas.width + x) * 4;
+            const [r,g,b,a] = [data[i],data[i+1],data[i+2],data[i+3]];
+            if (a > 0) cami += `{${x},${y}(${r},${g},${b})}`;
+          }
+          cami += '\n';
+        }
+        return { code: cami, ext: 'cami' };
+      }
+
+      return null;
+    }
+
+    button.addEventListener('click', async () => {
+      const file = input.files[0];
+      if (!file) return alert("Please select a file.");
+      const result = await translate(file);
+      if (!result) return alert("Unsupported file type or format.");
+
+      if (result.code) {
+        output.textContent = result.code;
+        const blob = new Blob([result.code], { type: 'text/plain' });
+        link.href = URL.createObjectURL(blob);
+        link.download = file.name.replace(/\.\w+$/, '') + '.' + result.ext;
+        link.textContent = `⬇ Download .${result.ext}`;
+        link.style.display = 'inline-block';
+      } else if (result.blob) {
+        output.textContent = '';
+        link.href = URL.createObjectURL(result.blob);
+        link.download = file.name.replace(/\.\w+$/, '') + '.' + result.ext;
+        link.textContent = `⬇ Download .${result.ext}`;
+        link.style.display = 'inline-block';
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

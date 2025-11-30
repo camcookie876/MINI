@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>404 · Camcookie MINI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      text-align: center;
+    }
+    .box {
+      max-width: 600px;
+      padding: 2em;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 0.2em;
+      color: #58a6ff;
+    }
+    p {
+      margin: 0.5em 0;
+      font-size: 1.1em;
+    }
+    .url {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      background: #161b22;
+      border: 1px solid #0099ff;
+      border-radius: 6px;
+      font-family: monospace;
+      word-break: break-all;
+    }
+    a {
+      display: inline-block;
+      margin-top: 1.5em;
+      padding: 0.6em 1.2em;
+      background: #238636;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    a:hover {
+      background: #2ea043;
+    }
+
+    /* bottom bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #161b22;
+      border-top: 1px solid #0099ff;
+      color: #8b949e;
+      text-align: center;
+      padding: 0.5em;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>CAMCOOKIE MINI - 404</h1>
+    <p>Sorry, this page could not be found.</p>
+    <p>You tried to visit:</p>
+    <div class="url" id="url"></div>
+    <a href="https://camcookie876.github.io/MINI/">Back to Home</a>
+  </div>
+  <script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+  document.getElementById('url').textContent = window.location.href;
+  </script>
+</body>
+</html>
