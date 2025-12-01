@@ -6,39 +6,17 @@
   <title>Camcookie MINI</title>
   <style>
     :root {
-      --accent: #ff6f61;
-      --accent-hover: #e85c50;
+      --accent: #0099ff;
+      --accent-hover: #0099ff;
       --bg: #fefefe;
       --text: #222;
     }
 
     body {
-      margin: 0;
-      padding: 0;
       font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      transition: background 0.3s ease;
     }
-
-    h1 {
-      font-size: 2em;
-      margin-bottom: 1.5em;
-      text-align: center;
-    }
-
-    .button-container {
-      display: flex;
-      gap: 1.5em;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
     .mini-btn {
       padding: 14px 28px;
       font-size: 1em;
@@ -49,57 +27,47 @@
       cursor: pointer;
       transition: background 0.3s ease, transform 0.2s ease;
     }
-
     .mini-btn:hover {
       background: var(--accent-hover);
       transform: scale(1.05);
     }
-
-    .fade-out {
-      animation: fadeOut 0.5s forwards;
+    .warning {
+      color: #cc3300;
     }
-
-    @keyframes fadeOut {
-      to {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-    }
-    .error { text-color: #ff0000:}
-    .mini-btn2 {
-      border: solid #ff0000;
-      border-radius: 5px;
-      background: #0099ff;
-      color: #ff0000;
+    .warning-btn {
+      padding: 14px 28px;
+      font-size: 1em;
+      border: none;
+      border-radius: 12px;
+      background: #cc3300;
+      color: white;
       cursor: pointer;
       transition: background 0.3s ease, transform 0.2s ease;
     }
-    .mini-btn2:hover {
-      background: #ff0000;
-      color: white;
-      border: solid #0099ff;
+    .warning-btn:hover {
+      background: #F32013;
+      transform: scale(1.05);
+    }
+    h1 {
+      color: #0099ff;
     }
   </style>
 </head>
 <body>
   <h1>Welcome to Camcookie MINI</h1>
-  <div class="button-container">
-    <h1 class="mini-btn">Kahoot MINI Project</h1>
+    <h1>Kahoot MINI Project</h1>
     <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/view/')">View Page</button>
     <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/make/')">Generate Page</button>
-    <h1 class="mini-btn">Cam File MINI Project</h1>
+    <h1>Cam File MINI Project</h1>
     <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/cam/')">Generate Page</button>
-  </div>
-  <h1 class="error">WARNING: There may be mistakes in the code. Curent license: Unlicense. <button class="mini-btn2" onclick="goTo('https://github.com/camcookie876/MINI/blob/main/LICENSE')">License imfromation</button>
+    <h1>RACE MINI Project</h1>
+    <button class="mini-btn" onclick="goTo('https://camcookie876.github.io/MINI/RACE/')">RACE Page</button>
+    <h1>GATE MINI Project</h1>
+    <p>NOT FULL PROGECT! CAMCOOKIE GATE IS A PROGECT. THIS IS ONLY DRAFT CODE! IT IS ABLE FOR USE, BUT CAMCOOKIE GATE IS UNDER FULL COPYRIGHT.</p>
+    <p>Because Camcookie Gate is made of all JS, you can only view the file tree and code on github.</p>
+    <button class="mini-btn" onclick="goTo('https://github.com/camcookie876/MINI/tree/main/GATE/')">GATE Page on GITHUB</button>
+  <h1 class="warning">WARNING: There may be mistakes in the code. Curent license: Unlicense.</h1>
+  <button class="warning-btn" onclick="goTo('https://github.com/camcookie876/MINI/blob/main/LICENSE')">License imfromation</button>
   </div></h1>
-
-  <script>
-    function goTo(url) {
-      document.body.classList.add('fade-out');
-      setTimeout(() => {
-        window.location.href = url;
-      }, 500);
-    }
-  </script>
 </body>
 </html>
